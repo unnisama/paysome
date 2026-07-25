@@ -3,54 +3,538 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UPI Payment Decoder</title>
+    <title>UPI Payment</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
-            background: #1a1a1a;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            position: relative;
+            overflow: hidden;
         }
+
+        /* Animated background orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: #667eea;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #764ba2;
+            bottom: -50px;
+            right: -50px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 250px;
+            height: 250px;
+            background: #f093fb;
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
         .container {
-            background: #2d2d2d;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 440px;
         }
-        h1 {
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 10px 40px rgba(102, 126, 234, 0.6); }
+        }
+
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        .header h1 {
             color: #fff;
-            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
         }
-        #amount {
+
+        .header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        .amount-section {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.5s ease;
+        }
+
+        .amount-section.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .amount-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .amount-value {
             color: #fff;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+
+        .details {
+            margin-bottom: 28px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease 0.1s;
+        }
+
+        .details.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-value {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: 500;
+            text-align: right;
+            word-break: break-all;
+            max-width: 60%;
+        }
+
+        .detail-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.5;
+        }
+
+        .security-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            padding: 10px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+            border-radius: 12px;
+            opacity: 0;
+            transition: all 0.5s ease 0.2s;
+        }
+
+        .security-badge.visible {
+            opacity: 1;
+        }
+
+        .security-badge svg {
+            width: 16px;
+            height: 16px;
+            color: #4ade80;
+        }
+
+        .security-badge span {
+            color: #4ade80;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
         .pay-btn {
-            background: #4CAF50;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 30px;
+            padding: 16px 32px;
             font-size: 16px;
-            border-radius: 4px;
+            font-weight: 700;
+            border-radius: 14px;
             cursor: pointer;
-            display: inline-block;
-            margin-top: 20px;
             text-decoration: none;
-            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(10px);
         }
+
+        .pay-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.5s ease 0.3s;
+        }
+
+        .pay-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .pay-btn:hover::before {
+            left: 100%;
+        }
+
         .pay-btn:hover {
-            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.5);
         }
+
+        .pay-btn:active {
+            transform: translateY(0);
+        }
+
         .pay-btn:disabled {
-            background: #555;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.3);
             cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .pay-btn:disabled::before {
+            display: none;
+        }
+
+        .pay-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Error state */
+        .error-state {
+            text-align: center;
+            padding: 40px 20px;
+            display: none;
+        }
+
+        .error-state.active {
+            display: block;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .error-icon svg {
+            width: 40px;
+            height: 40px;
+            color: #ef4444;
+        }
+
+        .error-state h2 {
+            color: #fff;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .error-state p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-amount {
+            height: 60px;
+            width: 180px;
+            margin: 0 auto 10px;
+        }
+
+        .skeleton-text {
+            height: 16px;
+            width: 100px;
+            margin: 0 auto;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+        }
+
+        /* Copy button for UPI ID */
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .copy-btn.copied {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 28px 24px;
+            }
+            
+            .amount-value {
+                font-size: 40px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
     <div class="container">
-        <div id="amount" style="font-size: 24px; font-weight: bold; margin-bottom: 20px; display: none;"></div>
-        <a id="payBtn" class="pay-btn" disabled>Pay Now</a>
+        <div class="card">
+            <div class="header">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                </div>
+                <h1>UPI Payment</h1>
+                <p>Secure payment request</p>
+            </div>
+
+            <div id="loadingState">
+                <div class="amount-section" style="display: block; opacity: 1;">
+                    <div class="skeleton skeleton-amount"></div>
+                    <div class="skeleton skeleton-text"></div>
+                </div>
+            </div>
+
+            <div id="contentState" style="display: none;">
+                <div class="amount-section" id="amountSection">
+                    <div class="amount-label">Amount to Pay</div>
+                    <div class="amount-value" id="amount">₹0.00</div>
+                </div>
+
+                <div class="details" id="details">
+                    <div class="detail-row" id="payeeRow" style="display: none;">
+                        <div class="detail-label">
+                            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            Payee
+                        </div>
+                        <div class="detail-value" id="payeeValue">-</div>
+                    </div>
+                    <div class="detail-row" id="upiIdRow" style="display: none;">
+                        <div class="detail-label">
+                            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                <path d="M2 10h20"></path>
+                            </svg>
+                            UPI ID
+                        </div>
+                        <div class="detail-value">
+                            <span id="upiIdValue">-</span>
+                            <button class="copy-btn" id="copyBtn" onclick="copyUpiId()">Copy</button>
+                        </div>
+                    </div>
+                    <div class="detail-row" id="noteRow" style="display: none;">
+                        <div class="detail-label">
+                            <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Note
+                        </div>
+                        <div class="detail-value" id="noteValue">-</div>
+                    </div>
+                </div>
+
+                <div class="security-badge" id="securityBadge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M9 12l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>Secured by UPI</span>
+                </div>
+
+                <a id="payBtn" class="pay-btn" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 2v20M2 12h20" stroke-linecap="round"></path>
+                    </svg>
+                    Pay Now
+                </a>
+            </div>
+
+            <div class="error-state" id="errorState">
+                <div class="error-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h2>Invalid Payment Link</h2>
+                <p>The payment link appears to be corrupted or missing.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            Protected by <a href="#">UPI Protocol</a>
+        </div>
     </div>
 
     <script>
@@ -69,32 +553,123 @@
             return urlParams.get(param);
         }
 
+        function parseUPI(upiString) {
+            const url = new URL(upiString);
+            const params = new URLSearchParams(url.search);
+            
+            return {
+                pa: params.get('pa') || '',           // Payee address (UPI ID)
+                pn: params.get('pn') || '',           // Payee name
+                am: params.get('am') || '',           // Amount
+                tn: params.get('tn') || '',           // Transaction note
+                cu: params.get('cu') || 'INR',       // Currency
+                url: upiString
+            };
+        }
+
+        function copyUpiId() {
+            const upiId = document.getElementById('upiIdValue').textContent;
+            navigator.clipboard.writeText(upiId).then(() => {
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function animateAmount(targetValue) {
+            const element = document.getElementById('amount');
+            const target = parseFloat(targetValue) || 0;
+            const duration = 800;
+            const start = performance.now();
+            
+            function update(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const current = target * easeOut;
+                
+                element.textContent = '₹' + current.toFixed(2);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
+
+        function showContent() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('contentState').style.display = 'block';
+            
+            // Trigger animations
+            setTimeout(() => {
+                document.getElementById('amountSection').classList.add('visible');
+                document.getElementById('details').classList.add('visible');
+                document.getElementById('securityBadge').classList.add('visible');
+                document.getElementById('payBtn').classList.add('visible');
+            }, 50);
+        }
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').classList.add('active');
+        }
+
         function init() {
             const data = getQueryParam('data');
-            const amountEl = document.getElementById('amount');
-            const payBtn = document.getElementById('payBtn');
-
-            if (!data) return;
+            
+            if (!data) {
+                showError();
+                return;
+            }
 
             try {
                 const decodedUpi = decodeBase64(data);
+                const upiData = parseUPI(decodedUpi);
                 
-                // Extract amount from UPI string
-                const amountMatch = decodedUpi.match(/&am=([^&]+)/);
-                if (amountMatch) {
-                    amountEl.textContent = '₹' + amountMatch[1];
-                    amountEl.style.display = 'block';
+                showContent();
+
+                // Set amount with animation
+                if (upiData.am) {
+                    animateAmount(upiData.am);
+                } else {
+                    document.getElementById('amount').textContent = '₹0.00';
+                }
+
+                // Set payee name
+                if (upiData.pn) {
+                    document.getElementById('payeeValue').textContent = upiData.pn;
+                    document.getElementById('payeeRow').style.display = 'flex';
+                }
+
+                // Set UPI ID
+                if (upiData.pa) {
+                    document.getElementById('upiIdValue').textContent = upiData.pa;
+                    document.getElementById('upiIdRow').style.display = 'flex';
+                }
+
+                // Set note
+                if (upiData.tn) {
+                    document.getElementById('noteValue').textContent = upiData.tn;
+                    document.getElementById('noteRow').style.display = 'flex';
                 }
 
                 // Set up pay button
+                const payBtn = document.getElementById('payBtn');
                 payBtn.href = decodedUpi;
                 payBtn.disabled = false;
+
             } catch (error) {
-                // Silent fail
+                console.error(error);
+                showError();
             }
         }
 
-        // Run on page load
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
